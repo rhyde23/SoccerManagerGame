@@ -1,0 +1,75 @@
+for league_progressing in leagues_in_game :
+    for team_progressing in current_data['TeamsInEachLeague'][league_progressing] :
+        key_progressing = team_progressing+'_Players'
+        for player_progressing in current_data[key_progressing] :
+            if current_data['WithoutYear'] == current_data[key_progressing][player_progressing]['Date of Birth'] :
+                current_data[key_progressing][player_progressing]['Age'] = str(int(current_data[key_progressing][player_progressing]['Age'])+1)
+            current_data[key_progressing][player_progressing]['Energy'] += daily_energy_gain
+            if current_data[key_progressing][player_progressing]['Energy'] > 100 :
+                current_data[key_progressing][player_progressing]['Energy'] = 100
+            current_data[key_progressing][player_progressing]['Morales'].append(current_data[key_progressing][player_progressing]['Morale'])
+            current_data[key_progressing][player_progressing]['DaysUntilNextDevUpdate'] += 1
+            if current_data[key_progressing][player_progressing]['DaysUntilNextDevUpdate'] == 20 :
+                
+                if current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDaysArray'+current_data[key_progressing][player_progressing]['DevelopmentPlanNumber']] == [] :
+                    current_data[key_progressing][player_progressing]['DevelopmentPlanNumber'] = str(int(current_data[key_progressing][player_progressing]['DevelopmentPlanNumber'])+1)
+                
+                development_extension = current_data[key_progressing][player_progressing]['DevelopmentPlanNumber']
+                    
+                cont = False
+                
+                apply_to_first, apply_to_second = 0, 19
+                
+                current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDays'+development_extension] += 19
+                if current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDays'+development_extension] >= current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDaysArray'+development_extension][current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension]] :
+                    current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDays'+development_extension] = 0
+                    apply_to_first = current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDays'+development_extension]-current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDaysArray'+development_extension][current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension]]
+                    apply_to_second -= apply_to_first
+                    current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension] += 1
+                    if current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension] == len(current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDaysArray'+development_extension]) :
+                        current_data[key_progressing][player_progressing]['DevelopmentPlanCountedDaysArray'+development_extension] = []
+                        cont = True
+            
+                
+                if cont :
+                    continue
+                
+                for name_of_stat in current_data[key_progressing][player_progressing]['DevelopmentPlan'+development_extension] :
+                    try :
+                        current_data[key_progressing][player_progressing]['Player Stats'][name_of_stat] += (apply_to_first*(current_data[key_progressing][player_progressing]['DevelopmentPlan'+development_extension][name_of_stat][current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension]-1]))
+                    except :
+                        pass
+                    current_data[key_progressing][player_progressing]['Player Stats'][name_of_stat] += (apply_to_second*(current_data[key_progressing][player_progressing]['DevelopmentPlan'+development_extension][name_of_stat][current_data[key_progressing][player_progressing]['DevelopmentPlanIndex'+development_extension]]))
+                    for morale_changer in current_data[key_progressing][player_progressing]['Morales'] :
+                        dev_morale_change = (1-((morale_changer/expected_morale)*(current_data[key_progressing][player_progressing]['Bases'][name_of_stat]/harshest_day_projection)))
+                        if not morale_can_help :
+                            if dev_morale_change > 0 :
+                                dev_morale_change = 0
+                        current_data[key_progressing][player_progressing]['Player Stats'][name_of_stat] += dev_morale_change
+                current_data[key_progressing][player_progressing]['Morales'] = []
+                        
+                positions_to_compute = ['CAM', 'CB', 'CDM', 'CF', 'CM', 'GK', 'LB', 'LM', 'LW', 'LWB', 'RB', 'RM', 'RW', 'RWB', 'ST']
+                positions_to_compute.remove(current_data[key_progressing][player_progressing]['Position'])
+                real_position_rating, adds_percentages, next_to_one = calculate_player_rating(current_data[key_progressing][player_progressing]['Player Stats'], current_data[key_progressing][player_progressing]['Position'], current_data[key_progressing][player_progressing]['Position'])
+                current_data[key_progressing][player_progressing]['Rating'] = str(real_position_rating)
+                ratings_positions = {current_data[key_progressing][player_progressing]['Position']:real_position_rating}
+                for position_to_compute in positions_to_compute :
+                    ratings_positions[position_to_compute], adds_percentages2, next_to_one2 = calculate_player_rating(current_data[key_progressing][player_progressing]['Player Stats'], position_to_compute, current_data[key_progressing][player_progressing]['Position'], real_position_rating=real_position_rating)
+                current_data[key_progressing][player_progressing]['Positions'] = ratings_positions
+                current_data[key_progressing][player_progressing]['DaysUntilNextDevUpdate'] = 0
+                done_count += 1
+        
+        current_data[team_progressing+'_LineupUpdate'] -= 1
+        if current_data[team_progressing+'_LineupUpdate'] == 0 :
+            throwaway_formation, throwaway_lineup, throwaway_rating = best_lineup({keyy:current_data[team_progressing+'_Players'][keyy]['Positions'] for keyy in current_data[team_progressing+'_Players']})
+            current_data[team_progressing+'_Formation'] = throwaway_formation
+            current_data[team_progressing+'_Lineup'] = throwaway_lineup
+            current_data[team_progressing+'_LineupUpdate'] = 2
+        
+        space_key_texts_index += space_key_texts_index_direction
+        if space_key_texts_index == length_of_space_key_texts-1 :
+            space_key_texts_index_direction = -1
+        if space_key_texts_index == 0 :
+            space_key_texts_index_direction = 1
+        display.blit(space_key_texts[space_key_texts_index], (space_key_text_x, 120))
+        pygame.display.update()
